@@ -26,94 +26,6 @@ EMAX Nanohawk 1S -- https://emax-usa.com/products/nanohawk-1s-ultralight-brushle
 <img width="2547" height="1422" alt="nanohawk_nl_agent_workflow" src="https://github.com/user-attachments/assets/43b41436-651b-4aa8-ac1d-ae5ac9cc0a6d" />
 
 
-## System Architecture
-
-+---------------------------------------------------------+
-|              Desktop AI Control Station                  |
-|                                                          |
-|  nanohawk-agent.exe  (Qt6 GUI)                          |
-|  +- VideoPane     -- live FPV feed (no goggles needed)  |
-|  +- PromptPane    -- natural-language command input      |
-|  +- TelemetryPane -- battery, attitude, RC channels      |
-|  +- MissionPane   -- mission JSON preview + execute      |
-|  +- SafetyPane    -- geofence, battery limits, auth      |
-|                                                          |
-|  nanohawk_agent_cli.exe  (headless runner / CI)         |
-|  launcher.exe  (Windows tray, auto-launches on detect)  |
-|                                                          |
-|  AI Core                                                 |
-|  +- LlmClient       -> llama.cpp HTTP (local, default)   |
-|  +- PromptCompiler  -> system prompt + mission schema    |
-|  +- JsonPlanParser  -> strict mission JSON validation    |
-|  +- MissionPlanner  -> Prompt -> TaskGraph               |
-|  +- MissionExecutor -> TaskGraph -> MSP commands         |
-|  +- SafetyEngine    -> altitude, battery, geofence veto  |
-|                                                          |
-|  MSP Layer (Betaflight serial protocol)                  |
-|  +- MspClient       -> MSP V1 framing over USB serial    |
-|  +- DeviceWatcher   -> auto-detect drone (WiFi + USB)    |
-|  +- HeartbeatMonitor-> link loss detection + failsafe    |
-+---------------------------------------------------------+
-        ^ USB serial  (MSP V1 -- command + telemetry)
-        ^ USB UVC     (FPV camera -> desktop display)
-        ^ HTTP/local  (llama.cpp LLM inference)
-+---------------------------------------------------------+
-|           EMAX Nanohawk 1S -- Betaflight FC              |
-|                                                          |
-|  STM32 Flight Controller (USB CDC, COM3)                |
-|  +- MSP_FC_VARIANT  -> "BTFL"                           |
-|  +- MSP_FC_VERSION  -> 4.2.0                            |
-|  +- MSP_ATTITUDE    -> roll / pitch / yaw (live IMU)    |
-|  +- MSP_ANALOG      -> battery V, mAh, RSSI, current    |
-|  +- MSP_RC          -> live RC channel values (us)      |
-|  +- MSP_SET_RAW_RC  -> autonomous RC override            |
-|                                                          |
-|  4-in-1 ESC -> 4 x 0802 brushless motors               |
-|  FPV Camera -> analog + 5.8 GHz VTX                     |
-+---------------------------------------------------------+
-``
-## MSP Protocol
-
-The agent communicates with the Betaflight FC using **MSP V1** (MultiWii Serial Protocol):
-
-``
-Request : '$' 'M' '<' <size:u8> <cmd:u8> [payload] <checksum:u8>
-Response: '$' 'M' '>' <size:u8> <cmd:u8> [payload] <checksum:u8>
-Checksum: XOR of size ^ cmd ^ payload[0] ^ ... ^ payload[n-1]
-`
-
-### Commands Used
-
-| Command | Code | Direction | Description |
-|---|---|---|---|
-| `MSP_FC_VARIANT` | 2 | FC -> agent | 4-char ID: `"BTFL"` |
-| `MSP_FC_VERSION` | 3 | FC -> agent | Firmware major.minor.patch |
-| `MSP_STATUS` | 101 | FC -> agent | Cycle time, sensors, flight modes |
-| `MSP_RC` | 105 | FC -> agent | Live RC channel values (us) |
-| `MSP_ATTITUDE` | 108 | FC -> agent | Roll/pitch (decidegrees), yaw (degrees) |
-| `MSP_ANALOG` | 110 | FC -> agent | Battery V, mAh drawn, RSSI, current |
-| `MSP_SET_RAW_RC` | 200 | agent -> FC | Override 8 RC channels (us) |
-
-Protocol source: `external/betaflight/msp/msp_protocol.h` (Betaflight GPL-3.0).
-
-### RC Override (Autonomous Flight)
-
-`MSP_SET_RAW_RC` (cmd 200) pushes 8 channel values directly to the FC:
-
-```
-ch[0] = Roll       (1000-2000 us)
-ch[1] = Pitch      (1000-2000 us)
-ch[2] = Throttle   (1000-2000 us)
-ch[3] = Yaw        (1000-2000 us)
-ch[4] = Arm switch (1000 = disarmed, >=1800 = armed)
-ch[5..7] = Aux channels
-```
-
-**Prerequisite:** In Betaflight Configurator -> Receiver -> set type to **MSP**.
-Without this, `MSP_SET_RAW_RC` is accepted but has no effect on the motors.
-
----
-
 ## Device Detection
 
 `DeviceWatcher` automatically finds the drone at startup using two methods:
@@ -443,6 +355,7 @@ This GitHub Repository is not currently sponsored by Emax USA - https://emax-usa
 - [Qt 6 CMake](https://doc.qt.io/qt-6/cmake-get-started.html)
 
 - [OpenCV](https://docs.opencv.org/)
+
 
 
 
