@@ -65,104 +65,6 @@ If no VID/PID match is found, falls back to sending an `NHAWK?` handshake on eve
 
 ---
 
-## Project Layout
-
-`
-D:\DroneAI\
-+-- betaflight-master\         # Betaflight firmware (GPL-3.0, MSP reference)
-+-- llama.cpp\                 # Local LLM runtime (OpenAI-compatible HTTP)
-+-- ardupilot-master\          # ArduPilot SITL (optional simulation)
-+-- ExpressLRS-master\         # ELRS radio firmware & config tools
-+-- gym-pybullet-drones-main\  # Drone simulation & policy validation
-+-- mavlink-master\            # MAVLink protocol definitions (optional)
-|
-+-- nanohawk-agent\            # <- THIS PROJECT
-    +-- CMakeLists.txt         # Build config (CMake 3.26+, C++20)
-    +-- CMakePresets.json      # Presets: ci, dev
-    +-- vcpkg.json             # Optional VCPKG dependencies
-    |
-    +-- config\
-    |   +-- endpoints.yaml         # Runtime: serial port, LLM URL, video index
-    |   +-- mission_schema.json    # LLM mission output schema
-    |   +-- safety_rules.yaml      # Policy: altitude, battery, geofence limits
-    |
-    +-- external\
-    |   +-- betaflight\msp\        # MSP headers (GPL-3.0, copied from betaflight-master)
-    |       +-- msp_protocol.h
-    |       +-- msp_protocol_v2_betaflight.h
-    |       +-- msp_protocol_v2_common.h
-    |
-    +-- include\
-    |   +-- app\
-    |   |   +-- Bootstrap.hpp      # Config loader, DI container setup
-    |   |   +-- ServiceLocator.hpp # Shared state resolver
-    |   |   +-- DeviceWatcher.hpp  # WiFi UDP + USB serial VID/PID detection
-    |   +-- msp\
-    |   |   +-- MspClient.hpp      # MSP V1: identify, telemetry, RC override
-    |   +-- telemetry\
-    |   |   +-- MavlinkTransport.hpp / HeartbeatMonitor.hpp / VehicleStateStore.hpp
-    |   +-- video\
-    |   |   +-- VideoSource.hpp / RtspSource.hpp / UvcSource.hpp / FrameBus.hpp
-    |   +-- llm\
-    |   |   +-- LlmClient.hpp / PromptCompiler.hpp / JsonPlanParser.hpp
-    |   +-- planning\
-    |   |   +-- MissionTypes.hpp / MissionPlanner.hpp / TaskGraph.hpp / MissionExecutor.hpp
-    |   +-- safety\
-    |   |   +-- RuleEngine.hpp / Geofence.hpp / BatteryGuard.hpp / LinkLossGuard.hpp / AbortController.hpp
-    |   +-- flight\
-    |       +-- ArduPilotGuidedAdapter.hpp / VelocityController.hpp / TakeoffLand.hpp / CommandArbiter.hpp
-    |
-    +-- src\
-    |   +-- main.cpp
-    |   +-- app\
-    |   |   +-- Bootstrap.cpp      # Auto-detect endpoint, override config if found
-    |   |   +-- ServiceLocator.cpp
-    |   |   +-- DeviceWatcher.cpp  # Windows: registry VID/PID + Winsock UDP broadcast
-    |   +-- msp\
-    |   |   +-- MspClient.cpp      # MSP V1 framing, Windows HANDLE serial, state machine
-    |   +-- gui\
-    |   |   +-- gui_main.cpp / MainWindow.cpp / VideoPane.cpp / TelemetryPane.cpp
-    |   |   +-- PromptPane.cpp / MissionPane.cpp / SafetyPane.cpp
-    |   +-- telemetry\ / video\ / llm\ / planning\ / safety\ / flight\
-    |       (one .cpp per .hpp above)
-    |
-    +-- tools\
-    |   +-- launcher\main.cpp  # Windows tray: detect drone, auto-launch agent
-    |
-    +-- scripts\
-    |   +-- start_llm_server.bat / start_gui.bat / start_launcher.bat
-    |
-    +-- models\llm\            # GGUF model files (download separately)
-    +-- logs\                  # Runtime logs (gitignored)
-    +-- test\unit\
-        +-- test_device_detection.cpp  # Detect + full MSP session (BTFL confirmed)
-        +-- test_pipeline.cpp / test_transports.cpp / test_config_wiring.cpp
-
-
-## Configuration
-
-`config\endpoints.yaml`:
-
-``yaml
-mavlink:
-  serial_port: COM3       # Betaflight FC USB port (auto-detected)
-  serial_baud: 115200     # MSP baud rate
-
-discovery:
-  wifi_port: 14560        # UDP broadcast for companion MCU
-  wifi_timeout_ms: 2000
-  serial_baud: 500000     # Companion MCU baud (if present)
-
-llm:
-  base_url: http://127.0.0.1:8080/v1
-  model: local-gguf
-
-video:
-  uvc_index: 0            # USB FPV capture device
-``
-
----
-
 ## Build and Run
 
 ### Prerequisites
@@ -191,30 +93,6 @@ cmake --preset dev
 cmake --build --preset dev
 .\build\dev\nanohawk_agent.exe
 `
-
-### Full Runtime
-
-``powershell
-# Terminal 1: local LLM
-llama-server.exe -m models\llm\your-model.gguf --port 8080
-
-# Terminal 2: agent (auto-detects COM3)
-.\build\dev\nanohawk_agent.exe
-``
-
----
-
-## Testing
-
-``powershell
-# Device detection + live MSP session
-.\build\dev\nanohawk_device_detection.exe
-
-# All unit tests
-ctest --preset ci
-``
-
----
 
 ## Troubleshooting
 
@@ -281,6 +159,7 @@ This GitHub Repository is not currently sponsored by Emax USA - https://emax-usa
 - [Qt 6 CMake](https://doc.qt.io/qt-6/cmake-get-started.html)
 
 - [OpenCV](https://docs.opencv.org/)
+
 
 
 
