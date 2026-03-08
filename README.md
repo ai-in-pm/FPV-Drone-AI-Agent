@@ -23,6 +23,10 @@ EMAX Nanohawk 1S -- https://emax-usa.com/products/nanohawk-1s-ultralight-brushle
 
 ---
 
+# Workflow Diagram
+<img width="2547" height="1422" alt="nanohawk_nl_agent_workflow" src="https://github.com/user-attachments/assets/43b41436-651b-4aa8-ac1d-ae5ac9cc0a6d" />
+
+```
 ## System Architecture
 
 ```
@@ -450,4 +454,5 @@ This GitHub Repository is not currently sponsored by Emax USA - https://emax-usa
 - [Qt 6 CMake](https://doc.qt.io/qt-6/cmake-get-started.html)
 
 - [OpenCV](https://docs.opencv.org/)
+
 
